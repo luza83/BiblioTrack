@@ -21,7 +21,7 @@ namespace BiblioTrack.Controllers
             _env = env;
         }
 
-        [HttpGet("{bookId:int}", Name = "GetBookCopies")]
+        [HttpGet("copies/{bookId:int}", Name = "GetBookCopies")]
         public IActionResult GetBookCopies(int bookId)
         {
             if (bookId == 0)
@@ -37,8 +37,25 @@ namespace BiblioTrack.Controllers
             return Ok(_response);
         }
 
-        [HttpPost("{bookId:int}", Name = "AddBookCopy")]
-        public async Task<ActionResult<ApiResponse>> AddBookCopy(int bookId, [FromForm] BookCopyDTO bookCopyCreateDto)
+
+        [HttpGet("{copyId:int}", Name = "GetBookCopyById")]
+        public IActionResult GetBookCopyById(int copyId)
+        {
+            if (copyId == 0)
+            {
+                _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                return Ok(_response);
+            }
+            _response.Result = _db.BookCopy
+                               .Where(bc => bc.CopyId == copyId)
+                               .ToList();
+            _response.StatusCode = System.Net.HttpStatusCode.OK;
+            return Ok(_response);
+        }
+
+        [HttpPost]
+        public async Task<ActionResult<ApiResponse>> AddBookCopy([FromForm] BookCopyDTO bookCopyCreateDto)
         {
             if (!ModelState.IsValid)
             {
@@ -46,7 +63,7 @@ namespace BiblioTrack.Controllers
                 return BadRequest(_response);
             }
 
-            if (bookId == 0 || bookId != bookCopyCreateDto.BookId || bookCopyCreateDto.Status.Length == 0)
+            if (bookCopyCreateDto.BookId == 0  || bookCopyCreateDto.Status.Length == 0)
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;

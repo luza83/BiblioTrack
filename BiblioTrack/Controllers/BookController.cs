@@ -9,7 +9,7 @@ using System.Net;
 
 namespace BiblioTrack.Controllers
 {
-    [Route("api/book")]
+    [Route("api/books")]
     [ApiController]
     public class BookController : Controller
     {
@@ -27,6 +27,7 @@ namespace BiblioTrack.Controllers
         public IActionResult GetBooks()
         {
             _response.Result=_db.Book.ToList();
+            _response.IsSuccess = true;
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
@@ -43,6 +44,7 @@ namespace BiblioTrack.Controllers
             }
             Book? book = _db.Book.FirstOrDefault(u=> u.BookId == id);
             _response.Result = book;
+            _response.IsSuccess = true;
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
@@ -111,7 +113,7 @@ namespace BiblioTrack.Controllers
             
         }
         
-        [HttpPut]
+        [HttpPut("{bookId:int}", Name = "UpdateBook")]
         public async Task<ActionResult<ApiResponse>> UpdateBook(int bookId, [FromForm] BookUpdateDto bookUpdateDto)
         {
             try
@@ -199,7 +201,7 @@ namespace BiblioTrack.Controllers
 
                     _db.Book.Update(existingBook);
                     await _db.SaveChangesAsync();
-
+                    _response.IsSuccess = true;
                     _response.StatusCode = HttpStatusCode.NoContent;
                     return Ok(_response);
 
@@ -256,6 +258,7 @@ namespace BiblioTrack.Controllers
                 await _db.SaveChangesAsync();
 
                 _response.StatusCode = HttpStatusCode.NoContent;
+                _response.IsSuccess = true;
                 return Ok(_response);
 
 

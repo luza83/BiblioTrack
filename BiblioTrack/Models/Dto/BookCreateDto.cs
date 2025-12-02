@@ -13,7 +13,6 @@ namespace BiblioTrack.Models.Dto
         public string ISBN { get; set; } = string.Empty;
         public string Publisher { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
-        public DateTime CreatedAt { get; set; }
         public IFormFile ImageFile { get; set; } = null!;
     }
 }

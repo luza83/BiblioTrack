@@ -4,6 +4,7 @@ using BiblioTrack.Models.Dto;
 using BiblioTrack.Services;
 using BiblioTrack.Utility;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -19,7 +20,9 @@ namespace BiblioTrack.Controllers
         private readonly ApiResponse _response;
         private readonly IWebHostEnvironment _env;
         private readonly BookCopyService _bookCopyService;
-        public BorrowingsController(ApplicationDbContext db, IWebHostEnvironment env, BookCopyService bookCopyService)
+        public BorrowingsController(ApplicationDbContext db, 
+                                    IWebHostEnvironment env,
+                                    BookCopyService bookCopyService)
         {
             _db = db;
             _response = new ApiResponse();
@@ -68,7 +71,10 @@ namespace BiblioTrack.Controllers
                 return BadRequest(_response);
             }
 
-            if (bookCopyId == 0 || bookCopyId != addBorrowingDto.CopyId)
+            if (bookCopyId == 0 || 
+                bookCopyId != addBorrowingDto.CopyId ||
+                string.IsNullOrEmpty(addBorrowingDto.UserId) ||
+                addBorrowingDto.UserId != User.FindFirst("Id")?.Value)
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
@@ -83,7 +89,7 @@ namespace BiblioTrack.Controllers
                 {
                     UserId = addBorrowingDto.UserId,
                     CopyId = addBorrowingDto.CopyId,
-                    BorrowDate = DateTime.Now,
+                    BorrowDate = DateTime.Now, 
                     DueDate = DateTime.Now.AddDays(15),
                     Status = SD.Borrowing_Status_Borrowed
                 };
