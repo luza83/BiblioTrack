@@ -21,6 +21,33 @@ namespace BiblioTrack.Controllers
             _env = env;
         }
 
+        [HttpGet]
+        public IActionResult GetBooks()
+        {
+            var Result = _db.Book.ToList();
+            var BookIds = Result.Select(b => b.BookId).ToList();
+            var BookCopies = _db.BookCopy
+                                .Where(bc => BookIds.Contains(bc.BookId))
+                                .ToList();
+            var BooksWithCopies = new List<BookAndCopiesDTO>();
+            foreach (var book in Result)
+            {
+                var copies = BookCopies.Where(bc => bc.BookId == book.BookId).ToList();
+                BooksWithCopies.Add(new BookAndCopiesDTO
+                {
+                    BookId = book.BookId,
+                    Title = book.Title,
+                    Author = book.Author,
+                    ImageUrl = book.ImageUrl,
+                    TotalCopies = copies.Count
+                });
+            }
+            _response.Result = BooksWithCopies;
+            _response.IsSuccess = true;
+            _response.StatusCode = System.Net.HttpStatusCode.OK;
+            return Ok(_response);
+        }
+
         [HttpGet("copies/{bookId:int}", Name = "GetBookCopies")]
         public IActionResult GetBookCopies(int bookId)
         {
@@ -33,6 +60,7 @@ namespace BiblioTrack.Controllers
             _response.Result = _db.BookCopy
                                .Where(bc => bc.BookId == bookId)
                                .ToList();
+            _response.IsSuccess = true;
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
@@ -101,7 +129,7 @@ namespace BiblioTrack.Controllers
         }
 
         [HttpPut("{bookCopyId:int}", Name = "UpdateBookCopy")]
-        public async Task<ActionResult<ApiResponse>> UpdateBookCopy(int bookCopyId, [FromForm] BookCopyDTO bookCopyUpdateDto)
+        public async Task<ActionResult<ApiResponse>> UpdateBookCopy(int bookCopyId, [FromBody] BookCopyDTO bookCopyUpdateDto)
         {
             try
             {
@@ -136,7 +164,7 @@ namespace BiblioTrack.Controllers
 
                 _db.BookCopy.Update(existingBookCopy);
                 await _db.SaveChangesAsync();
-
+                _response.IsSuccess = true;
                 _response.StatusCode = HttpStatusCode.NoContent;
                 return Ok(_response);
 
