@@ -83,7 +83,7 @@ namespace BiblioTrack.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult<ApiResponse>> AddBookCopy([FromForm] BookCopyDTO bookCopyCreateDto)
+        public async Task<ActionResult<ApiResponse>> AddBookCopy([FromBody] BookCopyDTO bookCopyCreateDto)
         {
             if (!ModelState.IsValid)
             {
