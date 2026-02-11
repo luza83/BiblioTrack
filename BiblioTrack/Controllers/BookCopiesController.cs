@@ -1,6 +1,7 @@
 ﻿using BiblioTrack.Data;
 using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
+using BiblioTrack.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -22,7 +23,7 @@ namespace BiblioTrack.Controllers
         }
 
         [HttpGet]
-        public IActionResult GetBooks()
+        public IActionResult GetBooks(bool getAvailableOnly = false)
         {
             var Result = _db.Book.ToList();
             var BookIds = Result.Select(b => b.BookId).ToList();
@@ -33,14 +34,25 @@ namespace BiblioTrack.Controllers
             foreach (var book in Result)
             {
                 var copies = BookCopies.Where(bc => bc.BookId == book.BookId).ToList();
+                if (getAvailableOnly)
+                {
+                    copies = copies.Where(c => c.Status == SD.Book_Copy_Status_Available).ToList();
+                }
                 BooksWithCopies.Add(new BookAndCopiesDTO
                 {
                     BookId = book.BookId,
                     Title = book.Title,
                     Author = book.Author,
+                    Publisher = book.Publisher,
+                    Category = book.Category,
                     ImageUrl = book.ImageUrl,
                     TotalCopies = copies.Count
                 });
+                if (getAvailableOnly)
+                {
+                    BooksWithCopies = BooksWithCopies.Where(bc => bc.TotalCopies > 0).ToList();
+                }
+               
             }
             _response.Result = BooksWithCopies;
             _response.IsSuccess = true;
@@ -179,7 +191,7 @@ namespace BiblioTrack.Controllers
             return BadRequest(_response);
         }
 
-        [HttpDelete("{bookCopyId:int}", Name = "DeleteBookCopy")]
+        [HttpDelete]
         public async Task<ActionResult<ApiResponse>> DeleteBookCopy(int bookCopyId)
         {
             try
@@ -210,6 +222,7 @@ namespace BiblioTrack.Controllers
                 _db.BookCopy.Remove(exisitingBookCopy);
                 await _db.SaveChangesAsync();
 
+                _response.IsSuccess = true;
                 _response.StatusCode = HttpStatusCode.NoContent;
                 return Ok(_response);
 
