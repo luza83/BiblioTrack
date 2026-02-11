@@ -11,8 +11,8 @@ using System.Text;
 
 namespace BiblioTrack.Controllers
 {
+    [Route("api/auth")]
     [ApiController]
-    [Route("api/[controller]")]
     public class AuthController : Controller
     {
         private readonly ApiResponse _response;
