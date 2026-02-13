@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Security.Claims;
 
 
 namespace BiblioTrack.Controllers
@@ -62,8 +63,8 @@ namespace BiblioTrack.Controllers
             return Ok(_response);
         }
 
-        [HttpPost("{bookCopyId:int}", Name = "AddBorrowing")]
-        public async Task<ActionResult<ApiResponse>> AddBorrowing(int bookCopyId, [FromForm] AddBorrowingDTO addBorrowingDto)
+        [HttpPost]
+        public async Task<ActionResult<ApiResponse>> AddBorrowing([FromBody] AddBorrowingDTO addBorrowingDto)
         {
             if (!ModelState.IsValid)
             {
@@ -71,10 +72,9 @@ namespace BiblioTrack.Controllers
                 return BadRequest(_response);
             }
 
-            if (bookCopyId == 0 || 
-                bookCopyId != addBorrowingDto.CopyId ||
+            if ( addBorrowingDto.BookId == 0 ||
                 string.IsNullOrEmpty(addBorrowingDto.UserId) ||
-                addBorrowingDto.UserId != User.FindFirst("Id")?.Value)
+                addBorrowingDto.UserId != User.FindFirst("id")?.Value)
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
@@ -84,17 +84,27 @@ namespace BiblioTrack.Controllers
 
             try
             {
+                var firstAvailableCopy = _db.BookCopy
+                                .Where(bc => addBorrowingDto.BookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
+                                .FirstOrDefault();
 
+                if (firstAvailableCopy == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.BadRequest;
+                    _response.ErrorMessages.Add("No book copies available for this book");
+                    return BadRequest(_response);
+                }
                 Borrowings borrowing = new()
                 {
                     UserId = addBorrowingDto.UserId,
-                    CopyId = addBorrowingDto.CopyId,
-                    BorrowDate = DateTime.Now, 
+                    CopyId = firstAvailableCopy.CopyId,
+                    BorrowDate = DateTime.Now,
                     DueDate = DateTime.Now.AddDays(15),
                     Status = SD.Borrowing_Status_Borrowed
                 };
 
-                var bookCopyUpdated = await _bookCopyService.UpdateBookCopy(addBorrowingDto.CopyId,
+                var bookCopyUpdated = await _bookCopyService.UpdateBookCopy(firstAvailableCopy.CopyId,
                                                                                     SD.Book_Copy_Status_Borrowed);
 
                 if (!bookCopyUpdated.Success)

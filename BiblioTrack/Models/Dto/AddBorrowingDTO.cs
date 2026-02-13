@@ -10,7 +10,7 @@ namespace BiblioTrack.Models.Dto
         public string UserId { get; set; } = string.Empty;
 
         [Required]
-        public int CopyId { get; set; }
+        public int BookId { get; set; }
 
     }
 }
