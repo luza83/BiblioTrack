@@ -12,6 +12,7 @@
         public const string Book_Copy_Status_Damaged = "Damaged";
 
         public const string Borrowing_Status_Borrowed = "Borrowed";
+        public const string Borrowing_Status_Reserved = "Reserved";
         public const string Borrowing_Status_Returned = "Returned";
         public const string Borrowing_Status_Overdue = "Overdue";
 
