@@ -46,6 +46,9 @@ builder.Services.AddOpenApi(options =>
 });
 
 builder.Services.AddScoped<BookCopyService>();
+builder.Services.AddScoped<IUserActivityService, UserActivityService>();
+
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
