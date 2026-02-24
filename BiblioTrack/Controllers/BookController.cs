@@ -58,31 +58,17 @@ namespace BiblioTrack.Controllers
                 return BadRequest(_response);
             }
 
-            if (bookCreateDto.ImageFile == null || bookCreateDto.ImageFile.Length == 0)
+            if (bookCreateDto.ImageUrl == null || string.IsNullOrEmpty(bookCreateDto.ImageUrl))
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
-                _response.ErrorMessages = ["File is required"];
+                _response.ErrorMessages = ["Image URL is required"];
                 return BadRequest(_response);
             }
 
             try
             {
-                var imagesPath = Path.Combine(_env.WebRootPath, "images");
-                if (!Directory.Exists(imagesPath))
-                {
-                    Directory.CreateDirectory(imagesPath);
-                }
-                var filePath = Path.Combine(imagesPath, bookCreateDto.ImageFile.FileName);
-                if (System.IO.File.Exists(filePath))
-                {
-                    System.IO.File.Delete(filePath);
-                }
-                //uploading the image
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await bookCreateDto.ImageFile.CopyToAsync(stream);
-                }
+ 
 
                 Book book = new()
                 {
@@ -92,7 +78,7 @@ namespace BiblioTrack.Controllers
                     Publisher = bookCreateDto.Publisher,
                     Category = bookCreateDto.Category,
                     CreatedAt = new DateTime(),
-                    ImageUrl = "images/" + bookCreateDto.ImageFile.FileName
+                    ImageUrl = bookCreateDto.ImageUrl
                 };
 
                 _db.Book.Add(book);
