@@ -14,10 +14,15 @@ namespace BiblioTrack.Data
         public DbSet<Book> Book { get; set; }
         public DbSet<BookCopy> BookCopy { get; set; }
         public DbSet<Borrowings> Borrowings { get; set; }
-        //protected override void OnModelCreating(ModelBuilder builder)
-        //{
-        //    base.OnModelCreating(builder);
-        //    //builder.Entity<Books>().HasData();
-        //}
+        public DbSet<UserFavoriteBookModel> UserFavoriteBook { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            modelBuilder.Entity<UserFavoriteBookModel>()
+                .HasIndex(f => new { f.UserId, f.BookId })
+                .IsUnique();
+        }
     }
 }
