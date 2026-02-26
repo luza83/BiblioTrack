@@ -63,18 +63,19 @@ namespace BiblioTrack.Controllers
             return Ok(_response);
         }
 
-        [HttpPost]
-        public async Task<ActionResult<ApiResponse>> AddBorrowing([FromBody] AddBorrowingDTO addBorrowingDto)
+        [HttpPost("{bookId}", Name = "AddBorrowing")]
+        public async Task<ActionResult<ApiResponse>> AddBorrowing(int bookId)
         {
-            if (!ModelState.IsValid)
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+            if (currentUserId == null)
             {
                 _response.IsSuccess = false;
-                return BadRequest(_response);
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return Ok(_response);
             }
+   
 
-            if ( addBorrowingDto.BookId == 0 ||
-                string.IsNullOrEmpty(addBorrowingDto.UserId) ||
-                addBorrowingDto.UserId != User.FindFirst("id")?.Value)
+            if ( bookId == 0)
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
@@ -85,7 +86,7 @@ namespace BiblioTrack.Controllers
             try
             {
                 var firstAvailableCopy = _db.BookCopy
-                                .Where(bc => addBorrowingDto.BookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
+                                .Where(bc => bookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
                                 .FirstOrDefault();
 
                 if (firstAvailableCopy == null)
@@ -97,7 +98,7 @@ namespace BiblioTrack.Controllers
                 }
                 Borrowings borrowing = new()
                 {
-                    UserId = addBorrowingDto.UserId,
+                    UserId = currentUserId,
                     CopyId = firstAvailableCopy.CopyId,
                     BorrowDate = DateTime.Now,
                     DueDate = DateTime.Now.AddDays(15),
@@ -118,7 +119,6 @@ namespace BiblioTrack.Controllers
                 _db.Borrowings.Add(borrowing);
                 await _db.SaveChangesAsync();
 
-                _response.Result = addBorrowingDto;
                 _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
                 return Ok(_response);
