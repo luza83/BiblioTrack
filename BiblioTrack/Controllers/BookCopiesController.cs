@@ -2,9 +2,13 @@
 using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
 using BiblioTrack.Utility;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Linq;
 using System.Net;
+using System.Security.Claims;
 
 namespace BiblioTrack.Controllers
 {
@@ -13,32 +17,43 @@ namespace BiblioTrack.Controllers
     public class BookCopiesController : Controller
     {
         private readonly ApplicationDbContext _db;
+        private readonly UserManager<ApplicationUser> _userManager;
         private readonly ApiResponse _response;
         private readonly IWebHostEnvironment _env;
-        public BookCopiesController(ApplicationDbContext db, IWebHostEnvironment env)
+        public BookCopiesController(ApplicationDbContext db, UserManager<ApplicationUser> userManager ,IWebHostEnvironment env)
         {
             _db = db;
+            _userManager = userManager;
             _response = new ApiResponse();
             _env = env;
         }
-
+        [Authorize]
         [HttpGet]
-        public IActionResult GetBooks(bool getAvailableOnly = false)
+        public IActionResult GetAvailableBooks(bool getAvailableOnly = false)
         {
-            var Result = _db.Book.ToList();
-            var BookIds = Result.Select(b => b.BookId).ToList();
-            var BookCopies = _db.BookCopy
+            List<Book> AllBooks = _db.Book.ToList();
+            List<int> BookIds = AllBooks.Select(b => b.BookId).ToList();
+            List<BookCopy> BookCopies = _db.BookCopy
                                 .Where(bc => BookIds.Contains(bc.BookId))
                                 .ToList();
-            var BooksWithCopies = new List<BookAndCopiesDTO>();
-            foreach (var book in Result)
+            List<BookAndCopiesDTO> BooksWithCopies = new List<BookAndCopiesDTO>();
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+
+
+            List<UserFavoriteBookModel> favoriteBooks = new List<UserFavoriteBookModel>();
+            foreach (var book in AllBooks)
             {
-                var copies = BookCopies.Where(bc => bc.BookId == book.BookId).ToList();
+                List<BookCopy> bookTotalCopies = BookCopies.Where(bc => bc.BookId == book.BookId).ToList();
                 if (getAvailableOnly)
                 {
-                    copies = copies.Where(c => c.Status == SD.Book_Copy_Status_Available).ToList();
+                    bookTotalCopies = bookTotalCopies.Where(c => c.Status == SD.Book_Copy_Status_Available).ToList();
+                    if (currentUserId != null)
+                    {
+                        favoriteBooks = _db.UserFavoriteBook.Where(u => u.UserId == currentUserId).ToList();
+                       
+                    }
                 }
-                BooksWithCopies.Add(new BookAndCopiesDTO
+                BooksWithCopies.Add(new  BookAndCopiesDTO 
                 {
                     BookId = book.BookId,
                     Title = book.Title,
@@ -46,15 +61,14 @@ namespace BiblioTrack.Controllers
                     Publisher = book.Publisher,
                     Category = book.Category,
                     ImageUrl = book.ImageUrl,
-                    TotalCopies = copies.Count
+                    TotalCopies = bookTotalCopies.Count,
+                    IsUserFavorite = getAvailableOnly ? favoriteBooks.Any(b => b.BookId == book.BookId) : null,
+                    
                 });
-                if (getAvailableOnly)
-                {
-                    BooksWithCopies = BooksWithCopies.Where(bc => bc.TotalCopies > 0).ToList();
-                }
-               
+
+
             }
-            _response.Result = BooksWithCopies;
+            _response.Result = getAvailableOnly ? BooksWithCopies.Where(bc => bc.TotalCopies > 0).ToList() : BooksWithCopies;
             _response.IsSuccess = true;
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);

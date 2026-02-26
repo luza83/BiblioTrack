@@ -11,5 +11,7 @@ namespace BiblioTrack.Models.Dto
         public string Category { get; set; } = string.Empty;
         public string ImageUrl { get; set; } = string.Empty;
         public int TotalCopies { get; set; }
+        public bool? IsUserFavorite { get; set; } 
+
     }
 }
