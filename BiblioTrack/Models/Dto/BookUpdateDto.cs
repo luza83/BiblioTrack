@@ -12,6 +12,6 @@ namespace BiblioTrack.Models.Dto
         public string? Publisher { get; set; } 
         public string? Category { get; set; } 
         public DateTime CreatedAt { get; set; }
-        public IFormFile? ImageFile { get; set; }
+        public string? ImageUrl { get; set; }
     }
 }

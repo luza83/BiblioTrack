@@ -1,6 +1,7 @@
 ﻿using BiblioTrack.Data;
 using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
+using BiblioTrack.Services;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -15,18 +16,35 @@ namespace BiblioTrack.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly ApiResponse _response;
+        private readonly IBookService _bookservice;
         private readonly IWebHostEnvironment _env;
-        public BookController(ApplicationDbContext db, IWebHostEnvironment env)
+        public BookController(ApplicationDbContext db, IWebHostEnvironment env, IBookService bookService)
         {
             _db = db;
             _response = new ApiResponse();
             _env = env;
+            _bookservice = bookService;
         }
 
         [HttpGet]
-        public IActionResult GetBooks()
+        public async Task<IActionResult> GetBooks([FromQuery] GetBooksRequest getBooksRequest)
         {
-            _response.Result=_db.Book.ToList();
+            if (!ModelState.IsValid)
+            {
+                _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                return BadRequest(_response);
+            }
+
+            var response = await _bookservice.GetBooksAsync(getBooksRequest);
+
+            if (response == null)
+            {
+                _response.StatusCode = System.Net.HttpStatusCode.NotFound;
+                _response.IsSuccess = false;
+                return NotFound(_response);
+            }
+            _response.Result = response;
             _response.IsSuccess = true;
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
@@ -58,13 +76,6 @@ namespace BiblioTrack.Controllers
                 return BadRequest(_response);
             }
 
-            if (bookCreateDto.ImageUrl == null || string.IsNullOrEmpty(bookCreateDto.ImageUrl))
-            {
-                _response.IsSuccess = false;
-                _response.StatusCode = HttpStatusCode.BadRequest;
-                _response.ErrorMessages = ["Image URL is required"];
-                return BadRequest(_response);
-            }
 
             try
             {
@@ -102,100 +113,81 @@ namespace BiblioTrack.Controllers
         [HttpPut("{bookId:int}", Name = "UpdateBook")]
         public async Task<ActionResult<ApiResponse>> UpdateBook(int bookId, [FromForm] BookUpdateDto bookUpdateDto)
         {
+            if (!ModelState.IsValid)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
+
+            }
+
+            if (bookUpdateDto == null || bookUpdateDto.BookId != bookId)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return BadRequest(_response);
+            }
+
             try
             {
-                if (ModelState.IsValid)
-                {
-                    if (bookUpdateDto == null || bookUpdateDto.BookId != bookId)
-                    {
-                        _response.IsSuccess = false;
-                        _response.StatusCode = HttpStatusCode.BadRequest;
-                        return BadRequest(_response);
-                    }
 
-                    Book? existingBook =  _db.Book.FirstOrDefault(u => u.BookId == bookId);
+                Book? existingBook = _db.Book.FirstOrDefault(u => u.BookId == bookId);
 
-                    if (existingBook == null)
-                    {
-                        _response.IsSuccess = false;
-                        _response.StatusCode = HttpStatusCode.NotFound;
-                        return NotFound(_response);
-                    }
-                   
-                    if (!string.IsNullOrWhiteSpace(bookUpdateDto.Title) &&
-                        existingBook.Title != bookUpdateDto.Title)
-                    {
-                        existingBook.Title = bookUpdateDto.Title;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(bookUpdateDto.Author) &&
-                        existingBook.Author != bookUpdateDto.Author)
-                    {
-                        existingBook.Author = bookUpdateDto.Author;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(bookUpdateDto.ISBN) &&
-                        existingBook.ISBN != bookUpdateDto.ISBN)
-                    {
-                        existingBook.ISBN = bookUpdateDto.ISBN;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(bookUpdateDto.Publisher) &&
-                        existingBook.Publisher != bookUpdateDto.Publisher)
-                    {
-                        existingBook.Publisher = bookUpdateDto.Publisher;
-                    }
-
-                    if (!string.IsNullOrWhiteSpace(bookUpdateDto.Category) &&
-                        existingBook.Category != bookUpdateDto.Category)
-                    {
-                        existingBook.Category = bookUpdateDto.Category;
-                    }
-
-                    if (bookUpdateDto.CreatedAt != default &&
-                        existingBook.CreatedAt != bookUpdateDto.CreatedAt)
-                    {
-                        existingBook.CreatedAt = bookUpdateDto.CreatedAt;
-                    }
-
-
-
-                    if (bookUpdateDto.ImageFile != null && bookUpdateDto.ImageFile.Length > 0)
-                    {
-                        var imagesPath = Path.Combine(_env.WebRootPath, "images");
-                        if (!Directory.Exists(imagesPath))
-                        {
-                            Directory.CreateDirectory(imagesPath);
-                        }
-                        var filePath = Path.Combine(imagesPath, bookUpdateDto.ImageFile.FileName);
-                        if (System.IO.File.Exists(filePath))
-                        {
-                            System.IO.File.Delete(filePath);
-                        }
-                        var filePath_OldFile = Path.Combine(_env.WebRootPath, existingBook.ImageUrl);
-                        if (System.IO.File.Exists(filePath_OldFile))
-                        {
-                            System.IO.File.Delete(filePath_OldFile);
-                        }
-                        //uploading the image
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await bookUpdateDto.ImageFile.CopyToAsync(stream);
-                        }
-                        existingBook.ImageUrl = "images/" + bookUpdateDto.ImageFile.FileName;
-                    }
-
-                    _db.Book.Update(existingBook);
-                    await _db.SaveChangesAsync();
-                    _response.IsSuccess = true;
-                    _response.StatusCode = HttpStatusCode.NoContent;
-                    return Ok(_response);
-
-                }
-                else
+                if (existingBook == null)
                 {
                     _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.NotFound;
+                    return NotFound(_response);
                 }
+
+                if (!string.IsNullOrWhiteSpace(bookUpdateDto.Title) &&
+                    existingBook.Title != bookUpdateDto.Title)
+                {
+                    existingBook.Title = bookUpdateDto.Title;
+                }
+
+                if (!string.IsNullOrWhiteSpace(bookUpdateDto.Author) &&
+                    existingBook.Author != bookUpdateDto.Author)
+                {
+                    existingBook.Author = bookUpdateDto.Author;
+                }
+
+                if (!string.IsNullOrWhiteSpace(bookUpdateDto.ISBN) &&
+                    existingBook.ISBN != bookUpdateDto.ISBN)
+                {
+                    existingBook.ISBN = bookUpdateDto.ISBN;
+                }
+
+                if (!string.IsNullOrWhiteSpace(bookUpdateDto.Publisher) &&
+                    existingBook.Publisher != bookUpdateDto.Publisher)
+                {
+                    existingBook.Publisher = bookUpdateDto.Publisher;
+                }
+
+                if (!string.IsNullOrWhiteSpace(bookUpdateDto.Category) &&
+                    existingBook.Category != bookUpdateDto.Category)
+                {
+                    existingBook.Category = bookUpdateDto.Category;
+                }
+
+                if (bookUpdateDto.CreatedAt != default &&
+                    existingBook.CreatedAt != bookUpdateDto.CreatedAt)
+                {
+                    existingBook.CreatedAt = bookUpdateDto.CreatedAt;
+                }
+
+
+
+                if (!string.IsNullOrEmpty(bookUpdateDto.ImageUrl) && existingBook.ImageUrl != bookUpdateDto.ImageUrl)
+                {
+                    existingBook.ImageUrl = bookUpdateDto.ImageUrl;
+
+                }
+
+                _db.Book.Update(existingBook);
+                await _db.SaveChangesAsync();
+                _response.IsSuccess = true;
+                _response.StatusCode = HttpStatusCode.NoContent;
+                return Ok(_response);
             }
             catch (Exception ex)
             {
@@ -226,21 +218,17 @@ namespace BiblioTrack.Controllers
                     return BadRequest(_response);
                 }
 
-                Book? menuItemFromDb = await _db.Book.FirstOrDefaultAsync(u => u.BookId == bookId);
+                Book? existingBook = await _db.Book.FirstOrDefaultAsync(u => u.BookId == bookId);
 
-                if (menuItemFromDb == null)
+                if (existingBook == null)
                 {
                     _response.IsSuccess = false;
                     _response.StatusCode = HttpStatusCode.NotFound;
                     return NotFound(_response);
                 }
 
-                var filePath_OldFile = Path.Combine(_env.WebRootPath, menuItemFromDb.ImageUrl);
-                if (System.IO.File.Exists(filePath_OldFile))
-                {
-                    System.IO.File.Delete(filePath_OldFile);
-                }
-                _db.Book.Remove(menuItemFromDb);
+
+                _db.Book.Remove(existingBook);
                 await _db.SaveChangesAsync();
 
                 _response.StatusCode = HttpStatusCode.NoContent;

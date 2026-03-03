@@ -45,8 +45,9 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
 });
 
-builder.Services.AddScoped<BookCopyService>();
+builder.Services.AddScoped<IBookCopyService,BookCopyService>();
 builder.Services.AddScoped<IUserActivityService, UserActivityService>();
+builder.Services.AddScoped<IBookService, BookService>();
 
 
 var app = builder.Build();

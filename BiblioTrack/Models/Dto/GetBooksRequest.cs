@@ -2,18 +2,14 @@
 
 namespace BiblioTrack.Models.Dto
 {
-    public class BookCreateDto
+    public class GetBooksRequest
     {
-
-        [Required]
         public string Title { get; set; } = string.Empty;
-        [Required]
         public string Author { get; set; } = string.Empty;
-        [Required]
         public string ISBN { get; set; } = string.Empty;
         public string Publisher { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
-        [Required]
-        public string ImageUrl { get; set; } = string.Empty;
+        public int PageNumber { get; set; } = 1;
+        public int PageSize { get; set; } 
     }
 }
