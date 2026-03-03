@@ -118,7 +118,6 @@ namespace BiblioTrack.Controllers
                 }
                 _db.Borrowings.Add(borrowing);
                 await _db.SaveChangesAsync();
-
                 _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
                 return Ok(_response);
@@ -242,7 +241,7 @@ namespace BiblioTrack.Controllers
                 }
                 _db.Borrowings.Remove(existingBorrowing);
                 await _db.SaveChangesAsync();
-
+                _response.IsSuccess = true;
                 _response.StatusCode = HttpStatusCode.NoContent;
                 return Ok(_response);
 

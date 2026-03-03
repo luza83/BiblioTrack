@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BiblioTrack.Services
 {
-    public class BookCopyService
+    public class BookCopyService : IBookCopyService
     {
         private readonly ApplicationDbContext _db;
  
