@@ -1,4 +1,4 @@
-﻿namespace BiblioTrack.Models
+﻿namespace BiblioTrack.Models.Dto
 {
     public class PagedResponse<T>
     {
