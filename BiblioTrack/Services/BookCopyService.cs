@@ -84,6 +84,10 @@ namespace BiblioTrack.Services
                 {
                     query = query.Where(b => b.Category.Contains(getBooksRequest.Category));
                 }
+                if(getBooksRequest.GetAvailableOnly)
+                {
+                    query = query.Where(b => b.TotalCopies > 0);
+                }
                 var totalRecords = await query.CountAsync();
 
                 var booksWithCopies = query
