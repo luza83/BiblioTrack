@@ -20,10 +20,10 @@ namespace BiblioTrack.Controllers
         private readonly ApplicationDbContext _db;
         private readonly ApiResponse _response;
         private readonly IWebHostEnvironment _env;
-        private readonly BookCopyService _bookCopyService;
+        private readonly IBookCopyService _bookCopyService;
         public BorrowingsController(ApplicationDbContext db, 
                                     IWebHostEnvironment env,
-                                    BookCopyService bookCopyService)
+                                    IBookCopyService bookCopyService)
         {
             _db = db;
             _response = new ApiResponse();
@@ -102,11 +102,11 @@ namespace BiblioTrack.Controllers
                     CopyId = firstAvailableCopy.CopyId,
                     BorrowDate = DateTime.Now,
                     DueDate = DateTime.Now.AddDays(15),
-                    Status = SD.Borrowing_Status_Borrowed
+                    Status = SD.Borrowing_Status_Reserved
                 };
 
                 var bookCopyUpdated = await _bookCopyService.UpdateBookCopy(firstAvailableCopy.CopyId,
-                                                                                    SD.Book_Copy_Status_Borrowed);
+                                                                                    SD.Book_Copy_Status_Reserved);
 
                 if (!bookCopyUpdated.Success)
                 {
