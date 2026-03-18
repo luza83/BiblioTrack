@@ -75,12 +75,9 @@ namespace BiblioTrack.Controllers
                 _response.IsSuccess = false;
                 return BadRequest(_response);
             }
-
-
             try
             {
  
-
                 Book book = new()
                 {
                     Title = bookCreateDto.Title,
@@ -88,7 +85,7 @@ namespace BiblioTrack.Controllers
                     ISBN = bookCreateDto.ISBN,
                     Publisher = bookCreateDto.Publisher,
                     Category = bookCreateDto.Category,
-                    CreatedAt = new DateTime(),
+                    CreatedAt = DateTime.Now,
                     ImageUrl = bookCreateDto.ImageUrl
                 };
 

@@ -124,7 +124,7 @@ namespace BiblioTrack.Migrations
 
                     b.HasKey("BookId");
 
-                    b.ToTable("Book");
+                    b.ToTable("Book", (string)null);
                 });
 
             modelBuilder.Entity("BiblioTrack.Models.BookCopy", b =>
@@ -150,7 +150,7 @@ namespace BiblioTrack.Migrations
 
                     b.HasIndex("BookId");
 
-                    b.ToTable("BookCopy");
+                    b.ToTable("BookCopy", (string)null);
                 });
 
             modelBuilder.Entity("BiblioTrack.Models.Borrowings", b =>
@@ -187,7 +187,7 @@ namespace BiblioTrack.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("Borrowings");
+                    b.ToTable("Borrowings", (string)null);
                 });
 
             modelBuilder.Entity("BiblioTrack.Models.UserFavoriteBookModel", b =>
@@ -212,7 +212,7 @@ namespace BiblioTrack.Migrations
                     b.HasIndex("UserId", "BookId")
                         .IsUnique();
 
-                    b.ToTable("UserFavoriteBook");
+                    b.ToTable("UserFavoriteBook", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

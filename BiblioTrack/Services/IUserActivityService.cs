@@ -1,10 +1,10 @@
-﻿using BiblioTrack.Models;
+﻿using BiblioTrack.Models.Dto;
 
 namespace BiblioTrack.Services
 {
     public interface IUserActivityService
     {
-        Task<List<UserActivityModel>> GetUsersActivityAsync();
+        Task<PagedResponse<UserActivityDTO>> GetUsersActivityAsync(GetUserActivityRequest getUserActivityRequest );
     }
 
 }

@@ -21,14 +21,17 @@ namespace BiblioTrack.Controllers
         private readonly ApiResponse _response;
         private readonly IWebHostEnvironment _env;
         private readonly IBookCopyService _bookCopyService;
+        private readonly IBorrowingsService _borrowingsService;
         public BorrowingsController(ApplicationDbContext db, 
                                     IWebHostEnvironment env,
-                                    IBookCopyService bookCopyService)
+                                    IBookCopyService bookCopyService,
+                                    IBorrowingsService borrowingsService)
         {
             _db = db;
             _response = new ApiResponse();
             _env = env;
             _bookCopyService = bookCopyService;
+            _borrowingsService = borrowingsService;
         }
 
         [HttpGet("{userId}", Name = "GetUserBorrowings")]
@@ -132,75 +135,34 @@ namespace BiblioTrack.Controllers
 
         }
 
-        [HttpPut("{borrowId:int}", Name = "UpdateBorrowing")]
-        public async Task<ActionResult<ApiResponse>> UpdateBorrowing(int borrowId, [FromForm] UpdateBorrowingDTO borrowingUpdateDto)
+        [HttpPut]
+        public async Task<ActionResult<ApiResponse>> UpdateBorrowing([FromBody] UpdateBorrowingDTO borrowingUpdateDto)
         {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    _response.IsSuccess = false;
-                    return BadRequest(_response);
-                }
-
-                Borrowings? existingBorrowing = await _db.Borrowings.FindAsync(borrowId);
-
-
-                if (existingBorrowing == null || 
-                    borrowingUpdateDto == null || 
-                    existingBorrowing?.BorrowId != borrowId || 
-                    !string.Equals(existingBorrowing.UserId, borrowingUpdateDto.UserId))
-                {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    return BadRequest(_response);
-                }
-
-                bool updateBookCopy = false;
-
-                if (existingBorrowing.Status == SD.Borrowing_Status_Borrowed &&
-                    borrowingUpdateDto.DueDate != DateTime.MinValue && 
-                    existingBorrowing.DueDate < borrowingUpdateDto.DueDate)
-                {
-                    existingBorrowing.DueDate = borrowingUpdateDto.DueDate;
-                    existingBorrowing.Status = SD.Borrowing_Status_Borrowed;
-                }
-
-                if (borrowingUpdateDto.Status.Length != 0 && existingBorrowing.Status != borrowingUpdateDto.Status && borrowingUpdateDto.Status == SD.Borrowing_Status_Returned)
-                {
-                    existingBorrowing.Status = borrowingUpdateDto.Status;
-                    existingBorrowing.ReturnDate = DateTime.Now;
-                    updateBookCopy = true;
-                }
-
-                if (updateBookCopy)
-                {
-                    var copyUpdated = await _bookCopyService.UpdateBookCopy(existingBorrowing.CopyId, SD.Book_Copy_Status_Available);
-                    if (!copyUpdated.Success)
-                    {
-                        _response.IsSuccess = false;
-                        _response.StatusCode = HttpStatusCode.BadRequest;
-                        _response.ErrorMessages.Add(copyUpdated.Message);
-                        return BadRequest(_response);
-                    }
-                }
-                
-
-                _db.Borrowings.Update(existingBorrowing);
-                await _db.SaveChangesAsync();
-
-                _response.StatusCode = HttpStatusCode.NoContent;
-                return Ok(_response);
-
-            }
-            catch (Exception ex)
+            if (!ModelState.IsValid)
             {
                 _response.IsSuccess = false;
-                _response.ErrorMessages
-                     = [ex.ToString()];
+                return BadRequest(_response);
             }
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+            if (string.IsNullOrEmpty(currentUserId) || borrowingUpdateDto.BorrowId == 0)
+            {
+                _response.IsSuccess = false;
+                return BadRequest(_response);
+            }
+            var isUpdated = await _borrowingsService.UpdateBorrowing(currentUserId, borrowingUpdateDto);
+            if (!isUpdated)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return BadRequest(_response);
 
-            return BadRequest(_response);
+
+            }
+            _response.IsSuccess = true;
+            _response.StatusCode = HttpStatusCode.NoContent;
+            return Ok(_response);
+
+
         }
 
         [HttpDelete("{borrowingId:int}", Name = "DeleteBorrowing")]

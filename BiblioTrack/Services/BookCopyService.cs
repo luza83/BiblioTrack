@@ -29,7 +29,8 @@ namespace BiblioTrack.Services
 
             try
             {
-                if(existingBookCopy.Status != SD.Book_Copy_Status_Available && copyStatus == SD.Book_Copy_Status_Borrowed)
+                var isBorrowable = existingBookCopy.Status == SD.Book_Copy_Status_Available || existingBookCopy.Status == SD.Book_Copy_Status_Reserved;
+                if (!isBorrowable && copyStatus == SD.Book_Copy_Status_Borrowed)
                 {
                     return (false, "Book is not available");
                 }

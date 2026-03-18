@@ -26,13 +26,13 @@ namespace BiblioTrack.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetUsersAsync()
+        public async Task<IActionResult> GetUsersAsync([FromQuery] GetUserActivityRequest getUserActivityRequest)
         {
             var response = new ApiResponse();
 
             try
             {
-                var users = await _userActivityService.GetUsersActivityAsync();
+                var users = await _userActivityService.GetUsersActivityAsync(getUserActivityRequest);
 
                 response.StatusCode = HttpStatusCode.OK;
                 response.IsSuccess = true;

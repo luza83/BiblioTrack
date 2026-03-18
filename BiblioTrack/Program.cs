@@ -48,6 +48,7 @@ builder.Services.AddOpenApi(options =>
 builder.Services.AddScoped<IBookCopyService,BookCopyService>();
 builder.Services.AddScoped<IUserActivityService, UserActivityService>();
 builder.Services.AddScoped<IBookService, BookService>();
+builder.Services.AddScoped<IBorrowingsService, BorrowingsService>();
 
 
 var app = builder.Build();

@@ -6,15 +6,8 @@ namespace BiblioTrack.Models.Dto
     {
         [Required]
         public int BorrowId { get; set; }
-
-        [Required]
-        public string UserId { get; set; } = string.Empty;
-
-        [Required]
-        public int CopyId { get; set; }
-
-        [Required]
         public DateTime DueDate { get; set; }
-        public string Status { get; set; } = string.Empty;
+        public string OldBorrowStatus { get; set; } = string.Empty;
+        public string NewBorrowStatus { get; set; } = string.Empty;
     }
 }
