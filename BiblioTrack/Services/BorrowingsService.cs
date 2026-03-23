@@ -19,18 +19,22 @@ namespace BiblioTrack.Services
             _bookCopyService = bookCopyService;
         }
 
-        public async Task<bool> UpdateBorrowing(string userId, UpdateBorrowingDTO updateBorrowingDTO)
+        public async Task<bool> UpdateBorrowing(string userId, UpdateBorrowingDTO updateBorrowingDTO, bool isAdmin =false)
         {
             try
             {
                 Borrowings? existingBorrowing = await _db.Borrowings.FindAsync(updateBorrowingDTO.BorrowId);
 
+               
 
-                if (existingBorrowing == null ||
-                    existingBorrowing?.BorrowId != updateBorrowingDTO.BorrowId ||
-                    !string.Equals(existingBorrowing.UserId, userId))
+                if (existingBorrowing == null)
+                {          
+                   return false;
+                }
+                var isAuthorized = isAdmin || string.Equals(existingBorrowing.UserId, userId);
+
+                if (existingBorrowing?.BorrowId != updateBorrowingDTO.BorrowId || !isAuthorized)
                 {
-
                     return false;
                 }
 

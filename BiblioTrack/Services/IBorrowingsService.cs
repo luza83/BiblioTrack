@@ -4,7 +4,7 @@ namespace BiblioTrack.Services
 {
     public interface IBorrowingsService
     {
-        Task<bool> UpdateBorrowing(string userId, UpdateBorrowingDTO updateBorrowingDTO);
+        Task<bool> UpdateBorrowing(string userId, UpdateBorrowingDTO updateBorrowingDTO, bool isAdmin = false);
 
     }
 }

@@ -7,7 +7,6 @@ namespace BiblioTrack.Models.Dto
         [Required]
         public int BorrowId { get; set; }
         public DateTime DueDate { get; set; }
-        public string OldBorrowStatus { get; set; } = string.Empty;
         public string NewBorrowStatus { get; set; } = string.Empty;
     }
 }

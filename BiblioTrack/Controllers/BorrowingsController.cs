@@ -66,30 +66,33 @@ namespace BiblioTrack.Controllers
             return Ok(_response);
         }
 
-        [HttpPost("{bookId}", Name = "AddBorrowing")]
-        public async Task<ActionResult<ApiResponse>> AddBorrowing(int bookId)
+        [HttpPost]
+        public async Task<ActionResult<ApiResponse>> AddBorrowing([FromBody ] AddBorrowingRequest addBorrowingRequest)
         {
-            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
-            if (currentUserId == null)
-            {
-                _response.IsSuccess = false;
-                _response.StatusCode = HttpStatusCode.BadRequest;
-                return Ok(_response);
-            }
    
-
-            if ( bookId == 0)
+            if ( addBorrowingRequest.BookId == 0 || string.IsNullOrEmpty(addBorrowingRequest.UserId))
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 _response.ErrorMessages = ["Missing Book Details"];
                 return BadRequest(_response);
             }
+           
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+            var isUserAuthorized = isAdmin || currentUserId == addBorrowingRequest.UserId;
+            if (!isUserAuthorized)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return Ok(_response);
+            }
+
 
             try
             {
                 var firstAvailableCopy = _db.BookCopy
-                                .Where(bc => bookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
+                                .Where(bc => addBorrowingRequest.BookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
                                 .FirstOrDefault();
 
                 if (firstAvailableCopy == null)
@@ -101,12 +104,13 @@ namespace BiblioTrack.Controllers
                 }
                 Borrowings borrowing = new()
                 {
-                    UserId = currentUserId,
+                    UserId = addBorrowingRequest.UserId,
                     CopyId = firstAvailableCopy.CopyId,
                     BorrowDate = DateTime.Now,
                     DueDate = DateTime.Now.AddDays(15),
                     Status = SD.Borrowing_Status_Reserved
                 };
+
 
                 var bookCopyUpdated = await _bookCopyService.UpdateBookCopy(firstAvailableCopy.CopyId,
                                                                                     SD.Book_Copy_Status_Reserved);
@@ -121,6 +125,19 @@ namespace BiblioTrack.Controllers
                 }
                 _db.Borrowings.Add(borrowing);
                 await _db.SaveChangesAsync();
+
+                var response = new BorrowingDTO()
+                {
+                    BorrowId = borrowing.BorrowId,
+                    CopyId = borrowing.CopyId,
+                    Copy = borrowing.Copy,
+                    BorrowDate = borrowing.BorrowDate,
+                    DueDate = borrowing.DueDate,
+                    ReturnDate = borrowing.ReturnDate,
+                    Status = borrowing.Status
+                };
+
+                _response.Result = response;
                 _response.StatusCode = HttpStatusCode.Created;
                 _response.IsSuccess = true;
                 return Ok(_response);
@@ -144,12 +161,13 @@ namespace BiblioTrack.Controllers
                 return BadRequest(_response);
             }
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+            var isAdmin = User.IsInRole(SD.Role_Admin);
             if (string.IsNullOrEmpty(currentUserId) || borrowingUpdateDto.BorrowId == 0)
             {
                 _response.IsSuccess = false;
                 return BadRequest(_response);
             }
-            var isUpdated = await _borrowingsService.UpdateBorrowing(currentUserId, borrowingUpdateDto);
+            var isUpdated = await _borrowingsService.UpdateBorrowing(currentUserId, borrowingUpdateDto, isAdmin);
             if (!isUpdated)
             {
                 _response.IsSuccess = false;
