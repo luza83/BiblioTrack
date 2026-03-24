@@ -74,7 +74,6 @@ namespace BiblioTrack.Services
 
                         case SD.Book_Copy_Status_Available:
                             _db.Borrowings.Remove(existingBorrowing);
-                            await _db.SaveChangesAsync();
 
                             newCopyStatus = SD.Book_Copy_Status_Available;
                             updateBookCopy = true;
@@ -87,13 +86,14 @@ namespace BiblioTrack.Services
 
                 if (updateBookCopy && !string.IsNullOrEmpty(newCopyStatus))
                 {
-                    var copyUpdated = await _bookCopyService.UpdateBookCopy(existingBorrowing.CopyId, newCopyStatus);
+                    var copyUpdated = await _bookCopyService.UpdateBookCopy(existingBorrowing.CopyId, newCopyStatus, commitChanges:false);
                     if (!copyUpdated.Success)
                     {
                         return false;
                     }
                     if (!updateBorrowing)
                     {
+                        await _db.SaveChangesAsync();
                         return true;
                     }
 
