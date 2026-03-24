@@ -88,67 +88,19 @@ namespace BiblioTrack.Controllers
                 return Ok(_response);
             }
 
-
-            try
-            {
-                var firstAvailableCopy = _db.BookCopy
-                                .Where(bc => addBorrowingRequest.BookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
-                                .FirstOrDefault();
-
-                if (firstAvailableCopy == null)
-                {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    _response.ErrorMessages.Add("No book copies available for this book");
-                    return BadRequest(_response);
-                }
-                Borrowings borrowing = new()
-                {
-                    UserId = addBorrowingRequest.UserId,
-                    CopyId = firstAvailableCopy.CopyId,
-                    BorrowDate = DateTime.Now,
-                    DueDate = DateTime.Now.AddDays(15),
-                    Status = SD.Borrowing_Status_Reserved
-                };
-
-
-                var bookCopyUpdated = await _bookCopyService.UpdateBookCopy(firstAvailableCopy.CopyId,
-                                                                                    SD.Book_Copy_Status_Reserved);
-
-                if (!bookCopyUpdated.Success)
-                {
-
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    _response.ErrorMessages.Add(bookCopyUpdated.Message);
-                    return BadRequest(_response);
-                }
-                _db.Borrowings.Add(borrowing);
-                await _db.SaveChangesAsync();
-
-                var response = new BorrowingDTO()
-                {
-                    BorrowId = borrowing.BorrowId,
-                    CopyId = borrowing.CopyId,
-                    Copy = borrowing.Copy,
-                    BorrowDate = borrowing.BorrowDate,
-                    DueDate = borrowing.DueDate,
-                    ReturnDate = borrowing.ReturnDate,
-                    Status = borrowing.Status
-                };
-
-                _response.Result = response;
-                _response.StatusCode = HttpStatusCode.Created;
-                _response.IsSuccess = true;
-                return Ok(_response);
-            }
-            catch (Exception ex)
+            var response = await _borrowingsService.AddBorrowing(addBorrowingRequest);
+            if (response is null)
             {
                 _response.IsSuccess = false;
-                _response.ErrorMessages
-                     = [ex.ToString()];
-                return BadRequest(_response);
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return _response;
             }
+
+            _response.Result = response;
+            _response.StatusCode = HttpStatusCode.Created;
+            _response.IsSuccess = true;
+            return Ok(_response);
+
 
         }
 

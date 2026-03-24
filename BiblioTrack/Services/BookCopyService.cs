@@ -19,7 +19,7 @@ namespace BiblioTrack.Services
             _userManager = userManager;
         }
 
-        public async Task<(bool Success, string Message)> UpdateBookCopy(int copyId, string copyStatus)
+        public async Task<(bool Success, string Message)> UpdateBookCopy(int copyId, string copyStatus, bool commitChanges)
         {
             var existingBookCopy = await _db.BookCopy
                 .FirstOrDefaultAsync(u => u.CopyId == copyId);
@@ -36,7 +36,10 @@ namespace BiblioTrack.Services
                 }
                 existingBookCopy.Status = copyStatus;
                 _db.BookCopy.Update(existingBookCopy);
-                await _db.SaveChangesAsync();
+                if (commitChanges)
+                {
+                    await _db.SaveChangesAsync();
+                }
                 return (true, "Book copy successfully updated");
             }
             catch (Exception)

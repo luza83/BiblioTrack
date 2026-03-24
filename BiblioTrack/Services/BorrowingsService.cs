@@ -113,5 +113,59 @@ namespace BiblioTrack.Services
             }
         }
 
+        public async Task<BorrowingDTO> AddBorrowing(AddBorrowingRequest addBorrowingRequest)
+        {
+            try
+            {
+                var firstAvailableCopy = _db.BookCopy
+                                .Where(bc => addBorrowingRequest.BookId == bc.BookId && bc.Status == SD.Book_Copy_Status_Available)
+                                .FirstOrDefault();
+
+                if (firstAvailableCopy == null)
+                {
+                    throw new Exception("No book copies available for this book");
+                }
+                Borrowings borrowing = new()
+                {
+                    UserId = addBorrowingRequest.UserId,
+                    CopyId = firstAvailableCopy.CopyId,
+                    BorrowDate = DateTime.Now,
+                    DueDate = DateTime.Now.AddDays(15),
+                    Status = SD.Borrowing_Status_Reserved
+                };
+
+
+                var bookCopyUpdated = await _bookCopyService.UpdateBookCopy(copyId: firstAvailableCopy.CopyId,
+                                                                            copyStatus: SD.Book_Copy_Status_Reserved,
+                                                                            commitChanges: false);
+
+                if (!bookCopyUpdated.Success)
+                {
+
+                    throw new Exception("Failed to update book copy status");
+                }
+                _db.Borrowings.Add(borrowing);
+                await _db.SaveChangesAsync();
+
+                var response = new BorrowingDTO()
+                {
+                    BorrowId = borrowing.BorrowId,
+                    CopyId = borrowing.CopyId,
+                    Copy = borrowing.Copy,
+                    BorrowDate = borrowing.BorrowDate,
+                    DueDate = borrowing.DueDate,
+                    ReturnDate = borrowing.ReturnDate,
+                    Status = borrowing.Status
+                };
+
+                return response;
+            }
+            catch (Exception ex)
+            {
+
+                 throw;
+            }
+
+        }
     }
 }
