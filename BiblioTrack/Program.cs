@@ -49,6 +49,7 @@ builder.Services.AddScoped<IBookCopyService,BookCopyService>();
 builder.Services.AddScoped<IUserActivityService, UserActivityService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IBorrowingsService, BorrowingsService>();
+builder.Services.AddScoped<IUserFavoriteService, UserFavoriteService>();
 
 
 var app = builder.Build();

@@ -7,6 +7,6 @@
         public List<BorrowingDTO> BorrowedBooks { get; set; } = new List<BorrowingDTO>();
         public List<BorrowingDTO> ReservedBooks { get; set; } = new List<BorrowingDTO>();
         public List<BorrowingDTO> OverdueBooks { get; set; } = new List<BorrowingDTO>();
-        public List<Book> FavoriteBooks { get; set; } = new List<Book>();
+        public List<UserFavoriteDto> FavoriteBooks { get; set; } = new List<UserFavoriteDto>();
     }
 }

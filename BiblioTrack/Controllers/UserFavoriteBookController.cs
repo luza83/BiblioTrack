@@ -1,6 +1,8 @@
 ﻿using BiblioTrack.Data;
 using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
+using BiblioTrack.Services;
+using BiblioTrack.Utility;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -14,113 +16,90 @@ namespace BiblioTrack.Controllers
     {
         private readonly ApplicationDbContext _db;
         private readonly ApiResponse _response;
+        private readonly IUserFavoriteService _userFavoriteService;
         private readonly IWebHostEnvironment _env;
-        public UserFavoriteBook(ApplicationDbContext db, IWebHostEnvironment env)
+        public UserFavoriteBook(ApplicationDbContext db, IWebHostEnvironment env, IUserFavoriteService userFavoriteService)
         {
             _db = db;
             _response = new ApiResponse();
+            _userFavoriteService = userFavoriteService;
             _env = env;
         }
 
         [HttpGet("allFavoriteBooks")]
-        public IActionResult GetUserFavoriteBooks()
+        public IActionResult GetUserFavoriteBooks(UserFavoriteBooksRequest userFavoriteBooksRequest)
         {
+            //TODO  unused endpoint- bug fix and refactore needed if used
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
-            if(currentUserId == null)
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+     
+            if (currentUserId == null || currentUserId != userFavoriteBooksRequest.UserId || !isAdmin)
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 return Ok(_response);
             }
+
             _response.Result = _db.UserFavoriteBook.Where(u=> u.UserId == currentUserId).ToList();
             _response.IsSuccess = true;
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
-        [HttpPost("{bookId}", Name = "AddBookToFavorites")]
-        public async Task<ActionResult<ApiResponse>> AddBookToFavorites(int bookId)
+        [HttpPost]
+        public async Task<ActionResult<ApiResponse>> AddBookToFavorites([FromBody] UserFavoriteBooksRequest userFavoriteBooksRequest)
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
-            if (currentUserId == null)
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+            var isAuthorized = (currentUserId != userFavoriteBooksRequest.UserId) || !isAdmin;
+            if (currentUserId == null || 
+                userFavoriteBooksRequest.BookId == 0 ||
+                !isAuthorized)
             {
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
                 return Ok(_response);
             }
 
-            if (bookId == 0) { 
+            var result = await _userFavoriteService.AddToFavorites(userFavoriteBooksRequest);
+
+            if (!result) { 
                 _response.IsSuccess =false;
                 return BadRequest(_response);
             }
-            try
-            {
-                UserFavoriteBookModel newFavorite = new UserFavoriteBookModel();
-                newFavorite.UserId = currentUserId;
-                newFavorite.BookId = bookId;
 
-                _db.UserFavoriteBook.Add(newFavorite);
-                await _db.SaveChangesAsync();
-
-                _response.StatusCode = HttpStatusCode.Created;
-                _response.IsSuccess = true;
-                return Ok(_response);
-            }
-            catch (Exception ex) {
-                _response.IsSuccess = false;
-                _response.ErrorMessages
-                     = [ex.ToString()];
-                return BadRequest(_response);
-            }
+            _response.StatusCode = HttpStatusCode.Created;
+            _response.IsSuccess = true;
+            return Ok(_response);
 
         }
        
-        [HttpDelete("{bookId}", Name = "DeleteFavoriteBook")]
-        public async Task<ActionResult<ApiResponse>> DeleteFavoriteBook(int bookId)
+        [HttpDelete]
+        public async Task<ActionResult<ApiResponse>> DeleteFavoriteBook([FromBody] UserFavoriteBooksRequest userFavoriteBooksRequest)
         {
-            try
-            {
-
-                var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
-                if (currentUserId == null)
-                {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    return Ok(_response);
-                }
-                if (bookId == 0)
-                {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.BadRequest;
-                    return BadRequest(_response);
-                }
-
-                UserFavoriteBookModel? existingFavoriteBook = await _db.UserFavoriteBook.FirstOrDefaultAsync(u => u.UserId == currentUserId && u.BookId == bookId);
-
-                if (existingFavoriteBook == null)
-                {
-                    _response.IsSuccess = false;
-                    _response.StatusCode = HttpStatusCode.NotFound;
-                    return NotFound(_response);
-                }
-
-
-                _db.UserFavoriteBook.Remove(existingFavoriteBook);
-                await _db.SaveChangesAsync();
-
-                _response.StatusCode = HttpStatusCode.NoContent;
-                _response.IsSuccess = true;
-                return Ok(_response);
-
-
-            }
-            catch (Exception ex)
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+            var isAuthorized = (currentUserId != userFavoriteBooksRequest.UserId) || !isAdmin;
+            if (currentUserId == null ||
+                userFavoriteBooksRequest.BookId == 0 ||
+                !isAuthorized)
             {
                 _response.IsSuccess = false;
-                _response.ErrorMessages
-                     = [ex.ToString()];
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return Ok(_response);
+            }
+
+            var result = await _userFavoriteService.RemoveFromFavorites(userFavoriteBooksRequest);
+
+            if (!result)
+            {
+                _response.IsSuccess = false;
                 return BadRequest(_response);
             }
-           
+
+            _response.StatusCode = HttpStatusCode.NoContent;
+            _response.IsSuccess = true;
+            return Ok(_response);
+
         }
     }
 }

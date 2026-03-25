@@ -78,10 +78,23 @@ namespace BiblioTrack.Services
                     borrowingsByUser.TryGetValue(user.Id, out var userBorrowings);
                     userBorrowings ??= new List<Borrowings>();
                     favoritesByUser.TryGetValue(user.Id, out var userFavorites);
-                    var favoriteBooks = new List<Book>();
+                    var fb = new List<Book>();
                     if (userFavorites != null && userFavorites.Count > 0)
                     {
-                        favoriteBooks = [.. userFavorites.Select(f => f.Book)];
+                        fb = [.. userFavorites.Select(f => f.Book)];
+                    }
+                    var favoriteBooks = new List<UserFavoriteDto>();
+                    if (fb != null && fb.Count > 0)
+                    {
+                        var fb_copies = await _db.BookCopy.Where(c => fb.Select(f => f.BookId).Contains(c.BookId)).ToListAsync();
+
+                        favoriteBooks = userFavorites?.Select(f => new UserFavoriteDto
+                        {
+                            Id = f.Id,
+                            BookId = f.BookId,
+                            Book = f.Book,
+                            IsBorrowable = fb_copies.Any(c => c.BookId == f.BookId && c.Status == SD.Book_Copy_Status_Available)
+                        }).ToList();
                     }
 
                     var groupedByStatus = userBorrowings
@@ -94,7 +107,7 @@ namespace BiblioTrack.Services
                         UserName = user.UserName ?? "",
                         BorrowedBooks = MapCopies(groupedByStatus, "Borrowed"),
                         ReservedBooks = MapCopies(groupedByStatus, "Reserved"),
-                        FavoriteBooks = favoriteBooks
+                        FavoriteBooks = favoriteBooks ?? new List<UserFavoriteDto>(),
                     });
                 }
 
