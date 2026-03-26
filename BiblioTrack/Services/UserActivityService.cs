@@ -4,6 +4,7 @@ using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
 using BiblioTrack.Services;
 using BiblioTrack.Utility;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
@@ -132,6 +133,59 @@ namespace BiblioTrack.Services
                 };
             }
           
+        }
+        public async Task<UserActivityDTO> GetUserActivityByIdAsync(string userId, string userName)
+        {
+            try
+            {
+                var borrowings = await _db.Borrowings
+                    .Where(b => b.UserId == userId && b.Status != SD.Borrowing_Status_Returned)
+                    .Include(b => b.Copy).ThenInclude(c => c.Book)
+                    .Include(b => b.User)
+                    .ToListAsync();
+
+                var userFavorites = await _db.UserFavoriteBook.
+                    Where(f => f.UserId == userId).Include(b => b.Book).ToListAsync();
+
+
+                var fb = new List<Book>();
+                if (userFavorites != null && userFavorites.Count > 0)
+                {
+                    fb = [.. userFavorites.Select(f => f.Book)];
+                }
+                var favoriteBooks = new List<UserFavoriteDto>();
+                if (fb != null && fb.Count > 0)
+                {
+                    var fb_copies = await _db.BookCopy.Where(c => c.Status == SD.Book_Copy_Status_Available && fb.Select(f => f.BookId).Contains(c.BookId)).ToListAsync();
+
+                    favoriteBooks = userFavorites?.Select(f => new UserFavoriteDto
+                    {
+                        Id = f.Id,
+                        BookId = f.BookId,
+                        Book = f.Book,
+                        IsBorrowable = fb_copies.Count > 0
+                    }).ToList();
+                }
+
+                var groupedByStatus = borrowings
+                    .GroupBy(b => b.Status)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                var result = new UserActivityDTO
+                {
+                    UserId = userId,
+                    UserName = userName,
+                    BorrowedBooks = MapCopies(groupedByStatus, "Borrowed"),
+                    ReservedBooks = MapCopies(groupedByStatus, "Reserved"),
+                    FavoriteBooks = favoriteBooks ?? new List<UserFavoriteDto>(),
+                };
+                return result;
+
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"Error fetching user activity");
+            }
         }
         private List<BorrowingDTO> MapCopies(Dictionary<string, List<Borrowings>> borrowingsByStatus,string status)
         {
