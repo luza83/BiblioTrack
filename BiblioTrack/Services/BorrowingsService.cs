@@ -38,20 +38,15 @@ namespace BiblioTrack.Services
                     return false;
                 }
 
+                //  Due Date Extend
+                bool isRenew = (existingBorrowing.Status == SD.Borrowing_Status_Borrowed && updateBorrowingDTO.DueDate != DateTime.MinValue &&
+                    existingBorrowing.DueDate < updateBorrowingDTO.DueDate);
+
 
                 bool updateBookCopy = false;
-                bool updateBorrowing = !string.IsNullOrEmpty(updateBorrowingDTO.NewBorrowStatus) &&
-                                       existingBorrowing.Status != updateBorrowingDTO.NewBorrowStatus;
+                bool updateBorrowing = (!string.IsNullOrEmpty(updateBorrowingDTO.NewBorrowStatus) &&
+                                       existingBorrowing.Status != updateBorrowingDTO.NewBorrowStatus)|| isRenew;
                 string? newCopyStatus = null;
-
-                // Change Due Date
-                if (existingBorrowing.Status == SD.Borrowing_Status_Borrowed &&
-                    updateBorrowingDTO.DueDate != DateTime.MinValue &&
-                    existingBorrowing.DueDate < updateBorrowingDTO.DueDate)
-                {
-                    existingBorrowing.DueDate = updateBorrowingDTO.DueDate;
-                    existingBorrowing.Status = SD.Borrowing_Status_Borrowed;
-                }
 
 
                 if (updateBorrowing)
@@ -68,8 +63,15 @@ namespace BiblioTrack.Services
 
                         case SD.Borrowing_Status_Borrowed:
                             existingBorrowing.Status = updateBorrowingDTO.NewBorrowStatus;
-                            newCopyStatus = SD.Book_Copy_Status_Borrowed;
-                            updateBookCopy = true;
+                            if (isRenew)
+                            {
+                                existingBorrowing.DueDate = updateBorrowingDTO.DueDate;
+                            }
+                            else { existingBorrowing.BorrowDate = DateTime.Now;
+                                newCopyStatus = SD.Book_Copy_Status_Borrowed;
+                                updateBookCopy = true;
+                            }
+
                             break;
 
                         case SD.Book_Copy_Status_Available:

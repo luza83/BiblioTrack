@@ -147,23 +147,19 @@ namespace BiblioTrack.Services
                 var userFavorites = await _db.UserFavoriteBook.
                     Where(f => f.UserId == userId).Include(b => b.Book).ToListAsync();
 
-
-                var fb = new List<Book>();
+                var favoriteBooks = new List<UserFavoriteDto>();
                 if (userFavorites != null && userFavorites.Count > 0)
                 {
-                    fb = [.. userFavorites.Select(f => f.Book)];
-                }
-                var favoriteBooks = new List<UserFavoriteDto>();
-                if (fb != null && fb.Count > 0)
-                {
-                    var fb_copies = await _db.BookCopy.Where(c => c.Status == SD.Book_Copy_Status_Available && fb.Select(f => f.BookId).Contains(c.BookId)).ToListAsync();
+                   
+                    var fb_copies = await _db.BookCopy.Where(c => userFavorites.Select(f => f.BookId).Contains(c.BookId) && c.Status == SD.Book_Copy_Status_Available).ToListAsync();
 
-                    favoriteBooks = userFavorites?.Select(f => new UserFavoriteDto
+
+                    favoriteBooks = userFavorites.Select(f => new UserFavoriteDto
                     {
                         Id = f.Id,
                         BookId = f.BookId,
                         Book = f.Book,
-                        IsBorrowable = fb_copies.Count > 0
+                        IsBorrowable = fb_copies.Any(c => c.BookId == f.BookId)
                     }).ToList();
                 }
 
@@ -196,11 +192,15 @@ namespace BiblioTrack.Services
                 .Select(b => new BorrowingDTO
                 {
                     BorrowId = b.BorrowId,
+                    BorrowDate = b.BorrowDate,
                     Book = b.Copy.Book,
                     CopyId = b.Copy.CopyId,
+                    DueDate = b.DueDate,
+                    ReturnDate = b.ReturnDate,
                     Status = b.Status,
                 }).ToList();
         }
+     
 
     }
 
