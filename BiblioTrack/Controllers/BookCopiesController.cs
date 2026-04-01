@@ -29,34 +29,34 @@ namespace BiblioTrack.Controllers
             _response = new ApiResponse();
             _env = env;
         }
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> GetAvailableBooks([FromQuery] GetBooksRequest getBooksRequest)
-        {
-            if (!ModelState.IsValid)
-            {
-                _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
-                _response.IsSuccess = false;
-                return BadRequest(_response);
-            }
-            string? currentUserId = null;
-            if (getBooksRequest.IncludeUserFavorites)
-            {
-                currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+        //[Authorize]
+        //[HttpGet]
+        //public async Task<IActionResult> GetAvailableBooks([FromQuery] GetBooksRequest getBooksRequest)
+        //{
+        //    if (!ModelState.IsValid)
+        //    {
+        //        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+        //        _response.IsSuccess = false;
+        //        return BadRequest(_response);
+        //    }
+        //    string? currentUserId = null;
+        //    if (getBooksRequest.IncludeUserFavorites)
+        //    {
+        //        currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
 
-            }
-            var response  = await _bookCopyService.GetBooksWithCopiesAsync(getBooksRequest, currentUserId);
-            if (response == null)
-            {
-                _response.StatusCode = System.Net.HttpStatusCode.NotFound;
-                _response.IsSuccess = false;
-                return NotFound(_response);
-            }
-            _response.Result = response;
-            _response.IsSuccess = true;
-            _response.StatusCode = System.Net.HttpStatusCode.OK;
-            return Ok(_response);
-        }
+        //    }
+        //    var response  = await _bookCopyService.GetBorrowableBooksAsync(getBooksRequest, currentUserId);
+        //    if (response == null)
+        //    {
+        //        _response.StatusCode = System.Net.HttpStatusCode.NotFound;
+        //        _response.IsSuccess = false;
+        //        return NotFound(_response);
+        //    }
+        //    _response.Result = response;
+        //    _response.IsSuccess = true;
+        //    _response.StatusCode = System.Net.HttpStatusCode.OK;
+        //    return Ok(_response);
+        //}
 
         [HttpGet("copies/{bookId:int}", Name = "GetBookCopies")]
         public IActionResult GetBookCopies(int bookId)
@@ -77,7 +77,7 @@ namespace BiblioTrack.Controllers
 
 
         [HttpGet("{copyId:int}", Name = "GetBookCopyById")]
-        public IActionResult GetBookCopyById(int copyId)
+        public IActionResult GetBookCopyByCopyId(int copyId)
         {
             if (copyId == 0)
             {

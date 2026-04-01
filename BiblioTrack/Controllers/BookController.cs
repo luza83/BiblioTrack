@@ -2,10 +2,12 @@
 using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
 using BiblioTrack.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
+using System.Security.Claims;
 
 
 namespace BiblioTrack.Controllers
@@ -243,5 +245,54 @@ namespace BiblioTrack.Controllers
 
             return BadRequest(_response);
         }
+        
+        [Authorize]
+        [HttpGet("borrowable")]
+        public async Task<IActionResult> GetAvailableBooks([FromQuery] GetBooksRequest getBooksRequest)
+        {
+            if (!ModelState.IsValid)
+            {
+                _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                return BadRequest(_response);
+            }
+            string? currentUserId = null;
+            if (getBooksRequest.IncludeUserFavorites)
+            {
+                currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+
+            }
+            var response = await _bookservice.GetBorrowableBooksAsync(getBooksRequest, currentUserId);
+            if (response == null)
+            {
+                _response.StatusCode = System.Net.HttpStatusCode.NotFound;
+                _response.IsSuccess = false;
+                return NotFound(_response);
+            }
+            _response.Result = response;
+            _response.IsSuccess = true;
+            _response.StatusCode = System.Net.HttpStatusCode.OK;
+            return Ok(_response);
+        }
+        [HttpGet("borrowable/{bookId:int}", Name = "GetBorrowableBookById")]
+        public async Task<IActionResult> GetBorrowableBookById(int bookId)
+        {
+            var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+
+            if (bookId == 0 || currentUserId == null)
+            {
+                _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                return Ok(_response);
+            }
+            var result = await _bookservice.GetBorrowableBookByIdAsync(bookId, currentUserId);
+            _response.Result = result;
+            _response.IsSuccess = true;
+            _response.StatusCode = HttpStatusCode.OK;
+            return Ok(_response);
+        }
+
+
+
     }
 }
