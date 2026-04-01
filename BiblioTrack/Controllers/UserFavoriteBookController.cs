@@ -50,7 +50,7 @@ namespace BiblioTrack.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
             var isAdmin = User.IsInRole(SD.Role_Admin);
-            var isAuthorized = (currentUserId != userFavoriteBooksRequest.UserId) || !isAdmin;
+            var isAuthorized = (currentUserId == userFavoriteBooksRequest.UserId) || isAdmin;
             if (currentUserId == null || 
                 userFavoriteBooksRequest.BookId == 0 ||
                 !isAuthorized)
@@ -78,7 +78,7 @@ namespace BiblioTrack.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
             var isAdmin = User.IsInRole(SD.Role_Admin);
-            var isAuthorized = (currentUserId != userFavoriteBooksRequest.UserId) || !isAdmin;
+            var isAuthorized = (currentUserId == userFavoriteBooksRequest.UserId) || isAdmin;
             if (currentUserId == null ||
                 userFavoriteBooksRequest.BookId == 0 ||
                 !isAuthorized)
