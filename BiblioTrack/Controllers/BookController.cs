@@ -88,7 +88,9 @@ namespace BiblioTrack.Controllers
                     Publisher = bookCreateDto.Publisher,
                     Category = bookCreateDto.Category,
                     CreatedAt = DateTime.Now,
-                    ImageUrl = bookCreateDto.ImageUrl
+                    ImageUrl = bookCreateDto.ImageUrl,
+                    Description = bookCreateDto.Description,
+                    NumPages = bookCreateDto.NumPages
                 };
 
                 _db.Book.Add(book);
@@ -180,6 +182,15 @@ namespace BiblioTrack.Controllers
                 {
                     existingBook.ImageUrl = bookUpdateDto.ImageUrl;
 
+                }
+
+                if(!string.IsNullOrEmpty(bookUpdateDto.Description) && existingBook.Description != bookUpdateDto.Description)
+                {
+                    existingBook.Description = bookUpdateDto.Description;
+                }
+                if(bookUpdateDto.NumPages > 0 && bookUpdateDto.NumPages != existingBook.NumPages)
+                {
+                    existingBook.NumPages = bookUpdateDto.NumPages;
                 }
 
                 _db.Book.Update(existingBook);
