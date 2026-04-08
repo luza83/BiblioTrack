@@ -50,6 +50,7 @@ builder.Services.AddScoped<IUserActivityService, UserActivityService>();
 builder.Services.AddScoped<IBookService, BookService>();
 builder.Services.AddScoped<IBorrowingsService, BorrowingsService>();
 builder.Services.AddScoped<IUserFavoriteService, UserFavoriteService>();
+builder.Services.AddScoped<IDashboardService, DashBoardService>();
 
 
 var app = builder.Build();

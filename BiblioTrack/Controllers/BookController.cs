@@ -279,7 +279,7 @@ namespace BiblioTrack.Controllers
         {
             var currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
 
-            if (bookId == 0 || currentUserId == null)
+            if (bookId == 0)
             {
                 _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
                 _response.IsSuccess = false;

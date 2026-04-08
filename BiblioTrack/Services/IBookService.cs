@@ -7,7 +7,7 @@ namespace BiblioTrack.Services
     {
         Task <PagedResponse<Book>> GetBooksAsync(GetBooksRequest getBooksRequest);
         Task<PagedResponse<BorrowableBookDto>> GetBorrowableBooksAsync(GetBooksRequest getBooksRequest, string? userId = null);
-        Task<BorrowableBookDto> GetBorrowableBookByIdAsync(int bookId, string userId);
+        Task<BorrowableBookDto> GetBorrowableBookByIdAsync(int bookId, string? userId = null);
  
     }
 }

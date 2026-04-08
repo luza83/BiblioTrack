@@ -137,7 +137,7 @@ namespace BiblioTrack.Services
             }
 
         }
-        public async Task<BorrowableBookDto> GetBorrowableBookByIdAsync(int bookId, string userId)
+        public async Task<BorrowableBookDto> GetBorrowableBookByIdAsync(int bookId, string? userId = null)
         {
             try
             {
@@ -157,7 +157,7 @@ namespace BiblioTrack.Services
                         NumPages = b.NumPages,
                         RatingsCount = b.RatingsCount,
                         TotalCopies = _db.BookCopy.Count(c => c.BookId == b.BookId && c.Status == SD.Book_Copy_Status_Available),
-                        IsUserFavorite = _db.UserFavoriteBook.Any(f => f.BookId == b.BookId && f.UserId == userId)
+                        IsUserFavorite = userId != null ? _db.UserFavoriteBook.Any(f => f.BookId == b.BookId && f.UserId == userId): (bool?)null
                     })
                     .FirstOrDefaultAsync();
 
