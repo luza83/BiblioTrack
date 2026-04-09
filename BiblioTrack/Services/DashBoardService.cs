@@ -21,9 +21,6 @@ namespace BiblioTrack.Services
             try
             {
                 var lastMonth = DateTime.UtcNow.AddMonths(-1);
-                var seed = DateTime.UtcNow.Date.DayOfYear;
-
-                // Preload available copies per book
                 var availableCopies = await _db.BookCopy
                     .AsNoTracking()
                     .Where(c => c.Status == SD.Book_Copy_Status_Available)
@@ -31,7 +28,7 @@ namespace BiblioTrack.Services
                     .Select(g => new { BookId = g.Key, Count = g.Count() })
                     .ToDictionaryAsync(x => x.BookId, x => x.Count);
 
-                // Dashboard counts
+                
                 var totalBooks = await _db.Book
                     .AsNoTracking()
                     .CountAsync();
@@ -50,7 +47,6 @@ namespace BiblioTrack.Services
                     .AsNoTracking()
                     .CountAsync(b => b.Status == SD.Borrowing_Status_Reserved);
 
-                // Trending books (IDs)
                 var trendingBookIds = await _db.Borrowings
                     .AsNoTracking()
                     .Where(b => b.BorrowDate >= lastMonth)
@@ -59,6 +55,28 @@ namespace BiblioTrack.Services
                     .Take(15)
                     .Select(g => g.Key)
                     .ToListAsync();
+
+                var dayIndex = DateTime.UtcNow.DayOfYear % totalBooks;
+
+                var bookOfTheDay = await _db.Book
+                    .AsNoTracking()
+                    .OrderBy(b => b.BookId)
+                    .Skip(dayIndex)
+                    .Select(book => new BorrowableBookDto
+                    {
+                        BookId = book.BookId,
+                        Title = book.Title,
+                        Author = book.Author,
+                        ISBN = book.ISBN,
+                        Publisher = book.Publisher,
+                        Category = book.Category,
+                        ImageUrl = book.ImageUrl,
+                        Description = book.Description,
+                        NumPages = book.NumPages,
+                        AverageRating = book.AverageRating,
+                        RatingsCount = book.RatingsCount
+                    })
+                    .FirstOrDefaultAsync();
 
                 var trendingBooks = await _db.Book
                     .AsNoTracking()
@@ -82,36 +100,6 @@ namespace BiblioTrack.Services
                     })
                     .ToListAsync();
 
-                // Book of the day
-                var bookOfTheDayEntity = await _db.Book
-                    .AsNoTracking()
-                    .OrderBy(b => b.BookId * seed)
-                    .FirstOrDefaultAsync();
-
-                BorrowableBookDto bookOfTheDay = null;
-
-                if (bookOfTheDayEntity != null)
-                {
-                    bookOfTheDay = new BorrowableBookDto
-                    {
-                        BookId = bookOfTheDayEntity.BookId,
-                        Title = bookOfTheDayEntity.Title,
-                        Author = bookOfTheDayEntity.Author,
-                        ISBN = bookOfTheDayEntity.ISBN,
-                        Publisher = bookOfTheDayEntity.Publisher,
-                        Category = bookOfTheDayEntity.Category,
-                        ImageUrl = bookOfTheDayEntity.ImageUrl,
-                        Description = bookOfTheDayEntity.Description,
-                        NumPages = bookOfTheDayEntity.NumPages,
-                        AverageRating = bookOfTheDayEntity.AverageRating,
-                        RatingsCount = bookOfTheDayEntity.RatingsCount,
-                        TotalCopies = availableCopies.ContainsKey(bookOfTheDayEntity.BookId)
-                            ? availableCopies[bookOfTheDayEntity.BookId]
-                            : 0
-                    };
-                }
-
-                // New books
                 var newBooks = await _db.Book
                     .AsNoTracking()
                     .OrderByDescending(b => b.CreatedAt)
