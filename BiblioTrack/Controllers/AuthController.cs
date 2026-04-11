@@ -163,5 +163,64 @@ namespace BiblioTrack.Controllers
 
 
         }
+        
+        [HttpPut]
+        public async Task<IActionResult> UpdateUser([FromBody] RegisterRequestDTO model)
+        {
+            if (!ModelState.IsValid)
+            {
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                foreach (var error in ModelState.Values)
+                {
+                    foreach (var item in error.Errors)
+                    {
+                        _response.ErrorMessages.Add(item.ErrorMessage);
+                    }
+                }
+                return BadRequest(_response);
+
+            }
+
+
+            ApplicationUser newUser = new()
+            {
+                Email = model.Email,
+                UserName = model.Name,
+                NormalizedEmail = model.Email.ToUpper(),
+            };
+
+            var result = await _userManager.CreateAsync(newUser, model.Password);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                {
+                    _response.ErrorMessages.Add(error.Description);
+                }
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                _response.IsSuccess = false;
+                return BadRequest(_response);
+            }
+
+
+            if (!_roleManager.RoleExistsAsync(SD.Role_Admin).GetAwaiter().GetResult())
+            {
+                await _roleManager.CreateAsync(new IdentityRole(SD.Role_Admin));
+                await _roleManager.CreateAsync(new IdentityRole(SD.Role_Visitor));
+            }
+
+            if (model.Role.Equals(SD.Role_Admin, StringComparison.CurrentCultureIgnoreCase))
+            {
+                await _userManager.AddToRoleAsync(newUser, SD.Role_Admin);
+            }
+            else
+            {
+                await _userManager.AddToRoleAsync(newUser, SD.Role_Visitor);
+            }
+
+            _response.StatusCode = HttpStatusCode.OK;
+            _response.IsSuccess = true;
+            return Ok(_response);
+        }
     }
 }
