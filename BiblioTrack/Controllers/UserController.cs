@@ -25,7 +25,7 @@ namespace BiblioTrack.Controllers
             _response = new ApiResponse();
             _userManager = userManager;
         }
-
+        [Authorize]
         [HttpGet("{userId}", Name = "GetUserById")]
 
         public async Task<IActionResult> GetUserById(string userId)

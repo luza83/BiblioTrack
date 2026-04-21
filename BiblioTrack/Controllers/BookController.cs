@@ -2,6 +2,7 @@
 using BiblioTrack.Models;
 using BiblioTrack.Models.Dto;
 using BiblioTrack.Services;
+using BiblioTrack.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
@@ -68,13 +69,21 @@ namespace BiblioTrack.Controllers
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
-       
+        
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<ApiResponse>> CreateBook([FromForm] BookCreateDto bookCreateDto)
         {
             if (!ModelState.IsValid)
             {
                 _response.IsSuccess = false;
+                return BadRequest(_response);
+            }
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+            if (!isAdmin)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.Forbidden;
                 return BadRequest(_response);
             }
             try
@@ -110,7 +119,7 @@ namespace BiblioTrack.Controllers
             }
             
         }
-        
+        [Authorize]
         [HttpPut("{bookId:int}", Name = "UpdateBook")]
         public async Task<ActionResult<ApiResponse>> UpdateBook(int bookId, [FromForm] BookUpdateDto bookUpdateDto)
         {
@@ -119,6 +128,13 @@ namespace BiblioTrack.Controllers
                 _response.IsSuccess = false;
                 _response.StatusCode = HttpStatusCode.BadRequest;
 
+            }
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+            if (!isAdmin)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.Forbidden;
+                return BadRequest(_response);
             }
 
             if (bookUpdateDto == null || bookUpdateDto.BookId != bookId)
@@ -208,7 +224,7 @@ namespace BiblioTrack.Controllers
 
             return BadRequest(_response);
         }
-
+        [Authorize]
         [HttpDelete]
         public async Task<ActionResult<ApiResponse>> DeleteBook(int bookId)
         {
@@ -219,6 +235,13 @@ namespace BiblioTrack.Controllers
                     _response.IsSuccess = false;
                     return BadRequest(_response);
 
+                }
+                var isAdmin = User.IsInRole(SD.Role_Admin);
+                if (!isAdmin)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.Forbidden;
+                    return BadRequest(_response);
                 }
 
                 if (bookId == 0)
@@ -285,6 +308,7 @@ namespace BiblioTrack.Controllers
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
+
         [HttpGet("borrowable/{bookId:int}", Name = "GetBorrowableBookById")]
         public async Task<IActionResult> GetBorrowableBookById(int bookId)
         {

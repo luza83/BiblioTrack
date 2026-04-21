@@ -29,35 +29,7 @@ namespace BiblioTrack.Controllers
             _response = new ApiResponse();
             _env = env;
         }
-        //[Authorize]
-        //[HttpGet]
-        //public async Task<IActionResult> GetAvailableBooks([FromQuery] GetBooksRequest getBooksRequest)
-        //{
-        //    if (!ModelState.IsValid)
-        //    {
-        //        _response.StatusCode = System.Net.HttpStatusCode.BadRequest;
-        //        _response.IsSuccess = false;
-        //        return BadRequest(_response);
-        //    }
-        //    string? currentUserId = null;
-        //    if (getBooksRequest.IncludeUserFavorites)
-        //    {
-        //        currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
-
-        //    }
-        //    var response  = await _bookCopyService.GetBorrowableBooksAsync(getBooksRequest, currentUserId);
-        //    if (response == null)
-        //    {
-        //        _response.StatusCode = System.Net.HttpStatusCode.NotFound;
-        //        _response.IsSuccess = false;
-        //        return NotFound(_response);
-        //    }
-        //    _response.Result = response;
-        //    _response.IsSuccess = true;
-        //    _response.StatusCode = System.Net.HttpStatusCode.OK;
-        //    return Ok(_response);
-        //}
-
+      
         [HttpGet("copies/{bookId:int}", Name = "GetBookCopies")]
         public IActionResult GetBookCopies(int bookId)
         {
@@ -91,7 +63,7 @@ namespace BiblioTrack.Controllers
             _response.StatusCode = System.Net.HttpStatusCode.OK;
             return Ok(_response);
         }
-
+        [Authorize]
         [HttpPost]
         public async Task<ActionResult<ApiResponse>> AddBookCopy([FromBody] BookCopyDTO bookCopyCreateDto)
         {
@@ -100,6 +72,14 @@ namespace BiblioTrack.Controllers
                 _response.IsSuccess = false;
                 return BadRequest(_response);
             }
+            var isAdmin = User.IsInRole(SD.Role_Admin);
+            if (!isAdmin)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.Forbidden;
+                return BadRequest(_response);
+            }
+
 
             if (bookCopyCreateDto.BookId == 0  || bookCopyCreateDto.Status.Length == 0)
             {
@@ -137,15 +117,22 @@ namespace BiblioTrack.Controllers
             }
 
         }
-
+        [Authorize]
         [HttpPut("{bookCopyId:int}", Name = "UpdateBookCopy")]
-        public async Task<ActionResult<ApiResponse>> UpdateBookCopy(int bookCopyId, [FromBody] BookCopyDTO bookCopyUpdateDto)
+        public async Task<ActionResult<ApiResponse>> UpdateBookCopy(int bookCopyId, [FromBody] BookCopyUpdateDTO bookCopyUpdateDto)
         {
             try
             {
                 if (!ModelState.IsValid)
                 {
                     _response.IsSuccess = false;
+                    return BadRequest(_response);
+                }
+                var isAdmin = User.IsInRole(SD.Role_Admin);
+                if (!isAdmin)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.Forbidden;
                     return BadRequest(_response);
                 }
 
@@ -188,7 +175,7 @@ namespace BiblioTrack.Controllers
 
             return BadRequest(_response);
         }
-
+        [Authorize]
         [HttpDelete]
         public async Task<ActionResult<ApiResponse>> DeleteBookCopy(int bookCopyId)
         {
@@ -199,6 +186,13 @@ namespace BiblioTrack.Controllers
                     _response.IsSuccess = false;
                     return BadRequest(_response);
 
+                }
+                var isAdmin = User.IsInRole(SD.Role_Admin);
+                if (!isAdmin)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.Forbidden;
+                    return BadRequest(_response);
                 }
 
                 if (bookCopyId == 0)
