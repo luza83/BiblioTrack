@@ -4,6 +4,8 @@ using BiblioTrack.Models.Dto;
 using BiblioTrack.Utility;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics.Metrics;
+using System.Linq;
 
 namespace BiblioTrack.Services
 {
@@ -27,7 +29,6 @@ namespace BiblioTrack.Services
                     .GroupBy(c => c.BookId)
                     .Select(g => new { BookId = g.Key, Count = g.Count() })
                     .ToDictionaryAsync(x => x.BookId, x => x.Count);
-
                 
                 var totalBooks = await _db.Book
                     .AsNoTracking()
@@ -39,29 +40,25 @@ namespace BiblioTrack.Services
                     .Distinct()
                     .CountAsync();
 
-                var totalBorrowedBooks = await _db.Borrowings
+                var activeBorrowings = await _db.Borrowings
                     .AsNoTracking()
-                    .CountAsync(b => b.Status == SD.Borrowing_Status_Borrowed);
-
-                var totalReservedBooks = await _db.Borrowings
-                    .AsNoTracking()
-                    .CountAsync(b => b.Status == SD.Borrowing_Status_Reserved);
-
-                var trendingBookIds = await _db.Borrowings
-                    .AsNoTracking()
-                    .Where(b => b.BorrowDate >= lastMonth)
-                    .GroupBy(b => b.Copy.BookId)
-                    .OrderByDescending(g => g.Count())
-                    .Take(15)
-                    .Select(g => g.Key)
+                    .Where(b => b.Status == SD.Borrowing_Status_Borrowed ||
+                                b.Status == SD.Borrowing_Status_Reserved)
+                    .GroupBy(b => b.Status)
+                    .Select(g => new { Status = g.Key, Count = g.Count() })
                     .ToListAsync();
 
-                var dayIndex = DateTime.UtcNow.DayOfYear % totalBooks;
+                var totalBorrowedBooks = activeBorrowings
+                    .FirstOrDefault(x => x.Status == SD.Borrowing_Status_Borrowed)?.Count ?? 0;
+
+                var totalReservedBooks = activeBorrowings
+                    .FirstOrDefault(x => x.Status == SD.Borrowing_Status_Reserved)?.Count ?? 0;
+
+
 
                 var bookOfTheDay = await _db.Book
                     .AsNoTracking()
-                    .OrderBy(b => b.BookId)
-                    .Skip(dayIndex)
+                    .OrderBy(b => b.BookId).Skip(DateTime.UtcNow.DayOfYear) 
                     .Select(book => new BorrowableBookDto
                     {
                         BookId = book.BookId,
@@ -77,6 +74,15 @@ namespace BiblioTrack.Services
                         RatingsCount = book.RatingsCount
                     })
                     .FirstOrDefaultAsync();
+
+                var trendingBookIds = await _db.Borrowings
+                    .AsNoTracking()
+                    .Where(b => b.BorrowDate >= lastMonth)
+                    .GroupBy(b => b.Copy.BookId)
+                    .OrderByDescending(g => g.Count())
+                    .Take(15)
+                    .Select(g => g.Key)
+                    .ToListAsync();
 
                 var trendingBooks = await _db.Book
                     .AsNoTracking()
@@ -131,7 +137,7 @@ namespace BiblioTrack.Services
                     ReservedBookCount = totalReservedBooks,
                     TrendingBooks = trendingBooks,
                     NewBooks = newBooks,
-                    BookOfTheDay = bookOfTheDay
+                    BookOfTheDay = bookOfTheDay!
                 };
             }
             catch (Exception ex)
