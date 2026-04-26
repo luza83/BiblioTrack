@@ -15,7 +15,7 @@ namespace BiblioTrack.Controllers
         [HttpGet]
         public IActionResult Get() {
            _response.IsSuccess = true;
-           _response.StatusCode = System.Net.HttpStatusCode.NoContent;
+           _response.StatusCode = System.Net.HttpStatusCode.OK;
            return Ok(_response);
         }
     }
