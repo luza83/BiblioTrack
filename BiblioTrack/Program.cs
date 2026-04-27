@@ -48,6 +48,8 @@ builder.Services.AddOpenApi(options =>
     options.AddDocumentTransformer<BearerSecuritySchemeTransformer>();
 });
 
+builder.Services.AddMemoryCache();
+
 builder.Services.AddScoped<IBookCopyService,BookCopyService>();
 builder.Services.AddScoped<IUserActivityService, UserActivityService>();
 builder.Services.AddScoped<IBookService, BookService>();
@@ -59,11 +61,14 @@ builder.Services.AddScoped<IDashboardService, DashBoardService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    app.MapScalarApiReference();
-}
+//if (app.Environment.IsDevelopment())
+//{
+//    app.MapOpenApi();
+//    app.MapScalarApiReference();
+//}
+
+app.MapOpenApi();
+app.MapScalarApiReference();
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
