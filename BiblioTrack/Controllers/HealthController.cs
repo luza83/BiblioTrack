@@ -13,6 +13,7 @@ namespace BiblioTrack.Controllers
           _response = new ApiResponse();      
         }
         [HttpGet]
+        [HttpHead]
         public IActionResult Get() {
            _response.IsSuccess = true;
            _response.StatusCode = System.Net.HttpStatusCode.OK;
