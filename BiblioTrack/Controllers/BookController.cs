@@ -280,7 +280,6 @@ namespace BiblioTrack.Controllers
             return BadRequest(_response);
         }
         
-        [Authorize]
         [HttpGet("borrowable")]
         public async Task<IActionResult> GetAvailableBooks([FromQuery] GetBooksRequest getBooksRequest)
         {
