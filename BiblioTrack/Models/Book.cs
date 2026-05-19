@@ -15,7 +15,7 @@ namespace BiblioTrack.Models
         public string Publisher { get; set; } = string.Empty;
         public string Category { get; set; } = string.Empty;
         public DateTime CreatedAt { get; set; }
-        public string ImageUrl { get; set; } = string.Empty;
+        public string ImageUrl { get; set; } = string.Empty; 
         public string Description { get; set; } = string.Empty;
         public double AverageRating { get; set; }
         public int NumPages { get; set; }

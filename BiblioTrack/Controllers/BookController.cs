@@ -5,6 +5,7 @@ using BiblioTrack.Services;
 using BiblioTrack.Utility;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Net;
@@ -326,7 +327,63 @@ namespace BiblioTrack.Controllers
             return Ok(_response);
         }
 
+        [HttpPut("rate")]
+        public async Task<ActionResult<ApiResponse>> RateBook([FromBody] RateBookDto rateBookDto)
+        {
+            if (!ModelState.IsValid)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
 
+            }
+
+            if (rateBookDto == null || rateBookDto.BookId == 0)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.BadRequest;
+                return BadRequest(_response);
+            }
+            var  currentUserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("id")?.Value;
+
+            if (rateBookDto.UserId != currentUserId)
+            {
+                _response.IsSuccess = false;
+                _response.StatusCode = HttpStatusCode.Forbidden;
+                return BadRequest(_response);
+            }
+
+            try
+            {
+
+                Book? existingBook = _db.Book.FirstOrDefault(u => u.BookId == rateBookDto.BookId);
+
+                if (existingBook == null)
+                {
+                    _response.IsSuccess = false;
+                    _response.StatusCode = HttpStatusCode.NotFound;
+                    return NotFound(_response);
+                }
+                
+                int newRatingsCount = existingBook.RatingsCount + 1;
+                double newAverageRating = ((existingBook.AverageRating * existingBook.RatingsCount) + rateBookDto.Rating) / newRatingsCount;
+                existingBook.AverageRating = newAverageRating;
+                existingBook.RatingsCount = newRatingsCount;
+
+                _db.Book.Update(existingBook);
+                await _db.SaveChangesAsync();
+                _response.IsSuccess = true;
+                _response.StatusCode = HttpStatusCode.NoContent;
+                return Ok(_response);
+            }
+            catch (Exception ex)
+            {
+                _response.IsSuccess = false;
+                _response.ErrorMessages
+                     = [ex.ToString()];
+            }
+
+            return BadRequest(_response);
+        }
 
     }
 }
